@@ -39,6 +39,7 @@ if ($urls.Count -eq 0) {
 Write-Host "`n2. Select Quality:" -ForegroundColor Cyan
 Write-Host "[ENTER] -> 1080p (Default)" -ForegroundColor Green
 Write-Host "[BS]    -> 720p" -ForegroundColor Yellow
+Write-Host "[0]     -> Audio Only (M4A/AAC)" -ForegroundColor Magenta
 Write-Host "--------------------------"
 Write-Host "[1] 1440p  [4] 480p"
 Write-Host "[2] 1080p  [5] 360p"
@@ -47,8 +48,13 @@ Write-Host "[3] 720p   [6] 144p"
 $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 $vk = $key.VirtualKeyCode
 
-# Логика остается прежней, она идеально ложится под этот UI
-if ($vk -eq 49) { $res = 1440 }
+$audioOnly = $false
+$extraArgs = @() 
+
+if ($vk -eq 48) { 
+    $audioOnly = $true 
+}
+elseif ($vk -eq 49) { $res = 1440 }
 elseif ($vk -eq 50 -or $vk -eq 13) { $res = 1080 } 
 elseif ($vk -eq 51 -or $vk -eq 8) { $res = 720 }   
 elseif ($vk -eq 52) { $res = 480 }
@@ -56,7 +62,17 @@ elseif ($vk -eq 53) { $res = 360 }
 elseif ($vk -eq 54) { $res = 144 }
 else { $res = 1080 ; Write-Host "Defaulting to 1080p" }
 
-Write-Host "`nSelected: ${res}p (or best available below)" -ForegroundColor Cyan
+if ($audioOnly) {
+    Write-Host "`nSelected: Audio Only" -ForegroundColor Magenta
+    $formatStr = "bestaudio/best"
+    $extStr = "m4a"
+    $extraArgs = "--extract-audio", "--audio-format", "m4a"
+} else {
+    Write-Host "`nSelected: ${res}p (or best available)" -ForegroundColor Cyan
+    $formatStr = "bestvideo[height<=$res][vcodec^=av01]+bestaudio/best[height<=$res]/bestvideo[height<=$res][vcodec^=vp9]+bestaudio/best[height<=$res]/best[height<=$res]"
+    $extStr = "mkv"
+    $extraArgs = "--merge-output-format", $extStr
+}
 
 # ==========================================================
 # Download Process
@@ -65,15 +81,11 @@ Write-Host "`nSelected: ${res}p (or best available below)" -ForegroundColor Cyan
 foreach ($url in $urls) {
     Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
     
-    # Codec priority: AV1 > VP9 > H.264
-    # The [height<=$res] filter ensures the best available quality that does not exceed the selected resolution.
-    $formatStr = "bestvideo[height<=$res][vcodec^=av01]+bestaudio/best[height<=$res]/bestvideo[height<=$res][vcodec^=vp9]+bestaudio/best[height<=$res]/best[height<=$res]"
-    
     & $ytDlpExe -f $formatStr `
             --continue `
             --no-overwrites `
             --ffmpeg-location "$ffmpegBin" `
-            --merge-output-format mkv `
+            @extraArgs `
             --hls-prefer-ffmpeg `
             --fixup detect_or_warn `
             --abort-on-unavailable-fragment `
