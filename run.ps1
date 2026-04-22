@@ -1,21 +1,25 @@
 # ==========================================================
-# YT-DLP PowerShell Downloader
-# Settings
+# YT-DLP PowerShell Downloader (Stable GitHub Template)
+# ==========================================================
+# Description: Stable downloader with HLS fixes and codec priority.
+# Requirements: yt-dlp, FFmpeg, Deno.
 # ==========================================================
 
-$YT_DLP_DIR   = "C:\YOUR_PATH_TO\ytdlp"
-$FFMPEG_DIR   = "C:\YOUR_PATH_TO\ffmpeg\bin"
-$DENO_EXE     = "C:\YOUR_PATH_TO\.deno\bin\deno.exe"
+# 1. SETUP: Replace with your actual paths
+$binPath    = "C:\YOUR_PATH_TO\ytdlp"
+$ffmpegBin  = "C:\YOUR_PATH_TO\ffmpeg\bin"
+$denoPath   = "C:\YOUR_PATH_TO\.deno\bin\deno.exe" 
 
-$SAVE_DIR     = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$YT_DLP_EXE   = Join-Path $YT_DLP_DIR "yt-dlp.exe"
+# Automatic configuration
+$savePath   = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ytDlpExe   = Join-Path $binPath "yt-dlp.exe"
 
 # ==========================================================
 # Environment Check
 # ==========================================================
 
-if (-not (Test-Path $YT_DLP_EXE)) {
-    Write-Host "ERROR: yt-dlp.exe not found at $YT_DLP_DIR" -ForegroundColor Red
+if (-not (Test-Path $ytDlpExe)) {
+    Write-Host "ERROR: yt-dlp.exe not found. Please check `$binPath in the script." -ForegroundColor Red
     pause ; exit
 }
 
@@ -23,53 +27,57 @@ if (-not (Test-Path $YT_DLP_EXE)) {
 # User Input
 # ==========================================================
 
-Write-Host "1. Enter URL(s) and press [ENTER]" -ForegroundColor Cyan
-$inputRaw = Read-Host ">"
-$urls = $inputRaw -split '\s+' | Where-Object { $_ -match '^https?://' }
+Write-Host "1. Paste link(s) and press ENTER" -ForegroundColor Cyan
+$userInput = Read-Host ">"
+$urls = $userInput -split '\s+' | Where-Object { $_ -match '^https?://' }
 
 if ($urls.Count -eq 0) {
     Write-Host "No valid URLs detected." -ForegroundColor Red
     pause ; exit
 }
 
-Write-Host "`n2. Select Quality:" -ForegroundColor Cyan
-Write-Host "[1] 1080p | [2/ENTER] 720p | [3/BS] 480p | [4] 360p | [5] 144p"
+Write-Host "`n2. Choose Quality (Press key):" -ForegroundColor Cyan
+Write-Host "[1] - 1080p"
+Write-Host "[2] / [ENTER]      - 720p" -ForegroundColor Green
+Write-Host "[3] / [BACKSPACE] - 480p" -ForegroundColor Yellow
+Write-Host "[4] - 360p"
+Write-Host "[5] - 144p"
 
 $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 $vk = $key.VirtualKeyCode
 
-$resolution = if ($vk -eq 49) { 1080 }
-elseif ($vk -eq 50 -or $vk -eq 13) { 720 }
-elseif ($vk -eq 51 -or $vk -eq 8) { 480 }
-elseif ($vk -eq 52) { 360 }
-elseif ($vk -eq 53) { 144 }
-else { 720 }
+if ($vk -eq 49) { $res = 1080 }
+elseif ($vk -eq 50 -or $vk -eq 13) { $res = 720 }
+elseif ($vk -eq 51 -or $vk -eq 8) { $res = 480 }
+elseif ($vk -eq 52) { $res = 360 }
+elseif ($vk -eq 53) { $res = 144 }
+else { $res = 720 ; Write-Host "Defaulting to 720p" }
 
-Write-Host "`nTarget Resolution: ${resolution}p" -ForegroundColor Cyan
+Write-Host "`nSelected: ${res}p" -ForegroundColor Cyan
 
 # ==========================================================
 # Download Process
 # ==========================================================
 
-# Codec priority: AV1 > VP9 > AVC (H.264)
-$format = "bestvideo[height<=$resolution][vcodec^=av01]+bestaudio/best[height<=$resolution]/" +
-          "bestvideo[height<=$resolution][vcodec^=vp9]+bestaudio/best[resolution<=$resolution]/" +
-          "best[height<=$resolution]"
-
 foreach ($url in $urls) {
     Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
     
-    & $YT_DLP_EXE `
-        -f $format `
-        --continue `
-        --no-overwrites `
-        --hls-prefer-native `
-        --merge-output-format mkv `
-        --ffmpeg-location "$FFMPEG_DIR" `
-        --js-runtimes "deno:$DENO_EXE" `
-        --fixup warn `
-        -o "$SAVE_DIR\%(title)s.%(ext)s" `
-        $url
+    # Codec priority: AV1 > VP9 > H.264
+    $formatStr = "bestvideo[height<=$res][vcodec^=av01]+bestaudio/best[height<=$res]/bestvideo[height<=$res][vcodec^=vp9]+bestaudio/best[height<=$res]/best"
+    
+    & $ytDlpExe -f $formatStr `
+            --continue `
+            --no-overwrites `
+            --ffmpeg-location "$ffmpegBin" `
+            --merge-output-format mkv `
+            --hls-prefer-ffmpeg `
+            --fixup detect_or_warn `
+            --abort-on-unavailable-fragment `
+            --socket-timeout 30 `
+            --js-runtimes "deno:$denoPath" `
+            --fragment-retries 10 `
+            -o "$savePath\%(title)s.%(ext)s" `
+            $url
 }
 
 Write-Host "`n[!] All tasks completed." -ForegroundColor Green
