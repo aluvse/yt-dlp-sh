@@ -88,16 +88,15 @@ foreach ($url in $urls) {
     Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
     
     if ($url -like "*list=*") {
-        $outTemplate = "./%(playlist_title)s/%(playlist_index)s - %(title)s.%(ext)s"
+        $outTemplate = "./%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
     } else {
-        $outTemplate = "./%(title)s.%(ext)s"
+        $outTemplate = "./%(title)s [%(id)s].%(ext)s"
     }
 
     $allArgs = @(
         "-f", $formatStr,
         "--continue",
-        "--no-overwrites",
-        "--download-archive", $archiveFile,
+        "--no-overwrites",             
         "--ffmpeg-location", $ffmpegBin,
         "--hls-prefer-ffmpeg",
         "--fixup", "detect_or_warn",
@@ -107,7 +106,7 @@ foreach ($url in $urls) {
         "--fragment-retries", "10",
         "--yes-playlist",
         "--output-na-placeholder", "",
-        "--restrict-filenames",
+        "--restrict-filenames",        
         "-o", $outTemplate
     )
 
