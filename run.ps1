@@ -87,8 +87,10 @@ $archiveFile = Join-Path $savePath "downloaded_history.txt"
 foreach ($url in $urls) {
     Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
     
-    if ($url -like "*list=*") {
-        $outTemplate = "./%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
+    $isCollection = ($url -like "*list=*" -or $url -like "*/playlists*" -or $url -like "*/@*")
+
+    if ($isCollection) {
+        $outTemplate = "./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
     } else {
         $outTemplate = "./%(title)s [%(id)s].%(ext)s"
     }
@@ -96,7 +98,8 @@ foreach ($url in $urls) {
     $allArgs = @(
         "-f", $formatStr,
         "--continue",
-        "--no-overwrites",             
+        "--no-overwrites",
+        "--download-archive", "$archiveFile",             
         "--ffmpeg-location", $ffmpegBin,
         "--hls-prefer-ffmpeg",
         "--fixup", "detect_or_warn",
@@ -109,6 +112,7 @@ foreach ($url in $urls) {
         "--restrict-filenames",        
         "-o", $outTemplate
     )
+
 
     if ($extraArgs) { $allArgs += $extraArgs }
 
