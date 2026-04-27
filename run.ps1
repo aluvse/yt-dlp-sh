@@ -99,6 +99,7 @@ foreach ($url in $urls) {
         "-f", $formatStr,
         "--continue",
         "--no-overwrites",
+        "--embed-chapters",
         "--download-archive", "$archiveFile",             
         "--ffmpeg-location", $ffmpegBin,
         "--hls-prefer-ffmpeg",
