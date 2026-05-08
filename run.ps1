@@ -1,16 +1,13 @@
 # ==========================================================
 # YT-DLP PowerShell Downloader (Stable GitHub Template)
 # ==========================================================
-# Description: Stable downloader with HLS fixes and codec priority.
-# Requirements: yt-dlp, FFmpeg, Deno.
-# ==========================================================
 
-# 1. SETUP: Replace with your actual paths
-$binPath    = "C:\path\to\ytdlp\"
-$ffmpegBin  = "C:\path\to\ffmpeg\bin"
-$denoPath   = "C:\path\to\deno.exe"
+# 1. SETUP: WRITE YOUR PATH
+$binPath    = "YOUR_PATH_TO\ytdlp\"
+$ffmpegBin  = "YOUR_PATH_TO\ffmpeg\bin"
+$denoPath   = "YOUR_PATH_TO\bin\deno.exe" 
 
-# Automatic configuration
+# Автоматическая конфигурация
 $savePath   = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ytDlpExe   = Join-Path $binPath "yt-dlp.exe"
 
@@ -19,7 +16,7 @@ $ytDlpExe   = Join-Path $binPath "yt-dlp.exe"
 # ==========================================================
 
 if (-not (Test-Path $ytDlpExe)) {
-    Write-Host "ERROR: yt-dlp.exe not found. Please check `$binPath in the script." -ForegroundColor Red
+    Write-Host "ERROR: yt-dlp.exe not found." -ForegroundColor Red
     pause ; exit
 }
 
@@ -49,7 +46,6 @@ $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 $vk = $key.VirtualKeyCode
 
 $audioOnly = $false
-$extraArgs = @() 
 
 if ($vk -eq 48) { 
     $audioOnly = $true 
@@ -67,14 +63,12 @@ if ($audioOnly) {
     $formatStr = "bestaudio/best"
     $extraArgs = @("--extract-audio", "--audio-format", "m4a")
 } else {
-    Write-Host "`nSelected: ${res}p (AV1/VP9 Priority)" -ForegroundColor Cyan
-    # Используем простую строку формата, чтобы избежать ошибки "Requested format is not available"
+    Write-Host "`nSelected: ${res}p (Max Bitrate Mode)" -ForegroundColor Cyan
     $formatStr = "bestvideo[height<=$res]+bestaudio/best"
     $extraArgs = @(
         "--merge-output-format", "mkv", 
         "--external-downloader-args", "ffmpeg:-loglevel panic",
-        # Сортировка: Оригинал -> Разрешение -> Кодеки -> Битрейт -> Размер
-        "--format-sort", "lang:original,res:$res,vcodec:av1,vcodec:vp9,br,size"
+        "--format-sort", "res:$res,quality"
     )
 }
 
@@ -86,11 +80,10 @@ foreach ($url in $urls) {
     Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
     
     $isCollection = ($url -like "*list=*" -or $url -like "*/playlists*" -or $url -like "*/@*")
-
-    if ($isCollection) {
-        $outTemplate = "./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
+    $outTemplate = if ($isCollection) {
+        "./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
     } else {
-        $outTemplate = "./%(title)s [%(id)s].%(ext)s"
+        "./%(title)s [%(id)s].%(ext)s"
     }
 
     $allArgs = @(
@@ -105,7 +98,6 @@ foreach ($url in $urls) {
         "--abort-on-unavailable-fragment",
         "--socket-timeout", "30",
         "--js-runtimes", "deno:$denoPath",
-        "--extractor-args", "youtube:player-client=web",
         "--fragment-retries", "10",
         "--yes-playlist",
         "--output-na-placeholder", "",
