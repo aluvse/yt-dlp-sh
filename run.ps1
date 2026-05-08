@@ -6,9 +6,9 @@
 # ==========================================================
 
 # 1. SETUP: Replace with your actual paths
-$binPath    = "YOUR_PATH\bin\ytdlp\"
-$ffmpegBin  = "YOUR_PATH\bin\ffmpeg\bin"
-$denoPath   = "YOUR_PATH\bin\deno.exe" 
+$binPath    = "C:\path\to\ytdlp\"
+$ffmpegBin  = "C:\path\to\ffmpeg\bin"
+$denoPath   = "C:\path\to\deno.exe"
 
 # Automatic configuration
 $savePath   = Split-Path -Parent $MyInvocation.MyCommand.Definition
