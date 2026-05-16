@@ -1,7 +1,6 @@
 # ==========================================================
 # YT-DLP PowerShell Downloader (Zero-Loop Architecture)
 # ==========================================================
-
 # 1. SETUP: WRITE YOUR PATH
 $binPath    = "YOUR_PATH_TO\ytdlp\"
 $ffmpegBin  = "YOUR_PATH_TO\ffmpeg\bin"
@@ -71,38 +70,43 @@ if ($audioOnly) {
     )
 }
 
-
 # ==========================================================
 # Download Process
 # ==========================================================
 
-Write-Host "`n[*] Starting batch download process..." -ForegroundColor Yellow
+foreach ($url in $urls) {
+    Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
+    
+    $isCollection = ($url -like "*list=*" -or $url -like "*/playlists*" -or $url -like "*/@*")
+    $outTemplate = if ($isCollection) {
+        "./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
+    } else {
+        "./%(title)s [%(id)s].%(ext)s"
+    }
 
-$allArgs = @(
-    "-f", $formatStr,
-    "--continue",
-    "--no-overwrites",              
-    "--embed-chapters",
-    "--cookies", "$savePath\cookies.txt",
-    "--ffmpeg-location", $ffmpegBin,
-    "--hls-prefer-ffmpeg",
-    "--fixup", "detect_or_warn",
-    "--abort-on-unavailable-fragment",
-    "--socket-timeout", "30",
-    "--js-runtimes", "deno:$denoPath",
-    "--yes-playlist",
-    "--output-na-placeholder", "",
-    "--restrict-filenames",        
-    "--retries", "infinite",
-    "--fragment-retries", "infinite",
-    "--file-access-retries", "infinite",
-    "-o", "playlist:./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s",
-    "-o", "./%(title)s [%(id)s].%(ext)s"
-)
+    $allArgs = @(
+        "-f", $formatStr,
+        "--continue",
+        "--no-overwrites",              
+        "--embed-chapters",
+        "--cookies", "$savePath\cookies.txt",
+        "--ffmpeg-location", $ffmpegBin,
+        "--hls-prefer-ffmpeg",
+        "--fixup", "detect_or_warn",
+        "--abort-on-unavailable-fragment",
+        "--socket-timeout", "30",
+        "--js-runtimes", "deno:$denoPath",
+        "--fragment-retries", "10",
+        "--yes-playlist",
+        "--output-na-placeholder", "",
+        "--restrict-filenames",        
+        "-o", $outTemplate
+    )
 
-if ($extraArgs) { $allArgs += $extraArgs }
+    if ($extraArgs) { $allArgs += $extraArgs }
 
-& $ytDlpExe $allArgs $urls
+    & $ytDlpExe $allArgs "$url"
+}
 
 Write-Host "`n[!] All tasks completed." -ForegroundColor Green
 pause
