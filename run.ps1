@@ -1,5 +1,5 @@
 # ==========================================================
-# YT-DLP PowerShell Downloader (Stable GitHub Template)
+# YT-DLP PowerShell Downloader (Zero-Loop Architecture)
 # ==========================================================
 
 # 1. SETUP: WRITE YOUR PATH
@@ -7,7 +7,6 @@ $binPath    = "YOUR_PATH_TO\ytdlp\"
 $ffmpegBin  = "YOUR_PATH_TO\ffmpeg\bin"
 $denoPath   = "YOUR_PATH_TO\bin\deno.exe" 
 
-# Автоматическая конфигурация
 $savePath   = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ytDlpExe   = Join-Path $binPath "yt-dlp.exe"
 
@@ -72,43 +71,38 @@ if ($audioOnly) {
     )
 }
 
+
 # ==========================================================
 # Download Process
 # ==========================================================
 
-foreach ($url in $urls) {
-    Write-Host "`n[*] Processing: $url" -ForegroundColor Yellow
-    
-    $isCollection = ($url -like "*list=*" -or $url -like "*/playlists*" -or $url -like "*/@*")
-    $outTemplate = if ($isCollection) {
-        "./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"
-    } else {
-        "./%(title)s [%(id)s].%(ext)s"
-    }
+Write-Host "`n[*] Starting batch download process..." -ForegroundColor Yellow
 
-    $allArgs = @(
-        "-f", $formatStr,
-        "--continue",
-        "--no-overwrites",              
-        "--embed-chapters",
-        "--cookies", "$savePath\cookies.txt",
-        "--ffmpeg-location", $ffmpegBin,
-        "--hls-prefer-ffmpeg",
-        "--fixup", "detect_or_warn",
-        "--abort-on-unavailable-fragment",
-        "--socket-timeout", "30",
-        "--js-runtimes", "deno:$denoPath",
-        "--fragment-retries", "10",
-        "--yes-playlist",
-        "--output-na-placeholder", "",
-        "--restrict-filenames",        
-        "-o", $outTemplate
-    )
+$allArgs = @(
+    "-f", $formatStr,
+    "--continue",
+    "--no-overwrites",              
+    "--embed-chapters",
+    "--cookies", "$savePath\cookies.txt",
+    "--ffmpeg-location", $ffmpegBin,
+    "--hls-prefer-ffmpeg",
+    "--fixup", "detect_or_warn",
+    "--abort-on-unavailable-fragment",
+    "--socket-timeout", "30",
+    "--js-runtimes", "deno:$denoPath",
+    "--yes-playlist",
+    "--output-na-placeholder", "",
+    "--restrict-filenames",        
+    "--retries", "infinite",
+    "--fragment-retries", "infinite",
+    "--file-access-retries", "infinite",
+    "-o", "playlist:./%(uploader)s/%(playlist_title)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s",
+    "-o", "./%(title)s [%(id)s].%(ext)s"
+)
 
-    if ($extraArgs) { $allArgs += $extraArgs }
+if ($extraArgs) { $allArgs += $extraArgs }
 
-    & $ytDlpExe $allArgs "$url"
-}
+& $ytDlpExe $allArgs $urls
 
 Write-Host "`n[!] All tasks completed." -ForegroundColor Green
 pause
