@@ -100,7 +100,10 @@ foreach ($url in $urls) {
         "--yes-playlist",
         "--output-na-placeholder", "",
         "--restrict-filenames",        
-        "-o", $outTemplate
+        "-o", $outTemplate,
+        "--sleep-interval", "5",
+        "--max-sleep-interval", "15",
+        "--sleep-subtitles", "2"
     )
 
     if ($extraArgs) { $allArgs += $extraArgs }
