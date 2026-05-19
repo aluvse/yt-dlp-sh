@@ -44,21 +44,23 @@ $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 $vk = $key.VirtualKeyCode
 
 $audioOnly = $false
+$res       = $null
+$extraArgs = @()
 
-if ($vk -eq 48) { 
+if ($vk -eq 48 -or $vk -eq 96) { 
     $audioOnly = $true 
 }
-elseif ($vk -eq 49) { $res = 1440 }
-elseif ($vk -eq 50 -or $vk -eq 13) { $res = 1080 } 
-elseif ($vk -eq 51 -or $vk -eq 8) { $res = 720 }   
-elseif ($vk -eq 52) { $res = 480 }
-elseif ($vk -eq 53) { $res = 360 }
-elseif ($vk -eq 54) { $res = 144 }
+elseif ($vk -eq 49 -or $vk -eq 97) { $res = 1440 }
+elseif ($vk -eq 50 -or $vk -eq 98 -or $vk -eq 13) { $res = 1080 } 
+elseif ($vk -eq 51 -or $vk -eq 99 -or $vk -eq 8) { $res = 720 }   
+elseif ($vk -eq 52 -or $vk -eq 100) { $res = 480 }
+elseif ($vk -eq 53 -or $vk -eq 101) { $res = 360 }
+elseif ($vk -eq 54 -or $vk -eq 102) { $res = 144 }
 else { $res = 1080 ; Write-Host "Defaulting to 1080p" }
 
 if ($audioOnly) {
     Write-Host "`nSelected: Audio Only" -ForegroundColor Magenta
-    $formatStr = "bestaudio/best"
+    $formatStr = "ba/b"
     $extraArgs = @("--extract-audio", "--audio-format", "m4a")
 } else {
     Write-Host "`nSelected: ${res}p (Max Bitrate Mode)" -ForegroundColor Cyan
@@ -100,15 +102,12 @@ foreach ($url in $urls) {
         "--yes-playlist",
         "--output-na-placeholder", "",
         "--restrict-filenames",        
-        "-o", $outTemplate,
-        "--sleep-interval", "5",
-        "--max-sleep-interval", "15",
-        "--sleep-subtitles", "2"
+        "-o", $outTemplate
     )
 
     if ($extraArgs) { $allArgs += $extraArgs }
 
-    & $ytDlpExe $allArgs "$url"
+    & $ytDlpExe @allArgs "$url"
 }
 
 Write-Host "`n[!] All tasks completed." -ForegroundColor Green
