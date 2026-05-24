@@ -95,6 +95,7 @@ foreach ($url in $urls) {
         "--continue",
         "--no-overwrites",              
         "--embed-chapters",
+        "--embed-thumbnail",
         "--cookies", "$savePath\cookies.txt",
         "--ffmpeg-location", $ffmpegBin,
         "--hls-prefer-ffmpeg",
