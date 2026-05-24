@@ -59,9 +59,13 @@ elseif ($vk -eq 54 -or $vk -eq 102) { $res = 144 }
 else { $res = 1080 ; Write-Host "Defaulting to 1080p" }
 
 if ($audioOnly) {
-    Write-Host "`nSelected: Audio Only" -ForegroundColor Magenta
+    Write-Host "`nSelected: Audio Only (MP3)" -ForegroundColor Magenta
     $formatStr = "ba/b"
-    $extraArgs = @("--extract-audio", "--audio-format", "m4a")
+    $extraArgs = @(
+        "--extract-audio", 
+        "--audio-format", "mp3", 
+        "--audio-quality", "0"
+    )
 } else {
     Write-Host "`nSelected: ${res}p (Max Bitrate Mode)" -ForegroundColor Cyan
     $formatStr = "bestvideo[height<=$res]+bestaudio/best"
